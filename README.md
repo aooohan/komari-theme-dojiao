@@ -1,5 +1,7 @@
 <div align="center">
 
+<img width="200" src="./preview.png" alt="PurCarte Theme Preview">
+
 ## ✨ Dojiao ✨
 
 一款为 [Komari](https://github.com/komari-monitor/komari) 设计的磨砂玻璃风格个性化增强版主题
