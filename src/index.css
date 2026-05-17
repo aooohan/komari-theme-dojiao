@@ -188,7 +188,7 @@
   }
 
   .theme-card-style {
-    @apply rounded-lg shadow-sm shadow-(color:--accent-12)/50 box-border border border-(--accent-12)/50;
+    @apply rounded-lg box-border border border-(--accent-a4) shadow-[0_4px_12px_rgba(0,0,0,0.05)];
   }
 
   .theme-text-muted {
