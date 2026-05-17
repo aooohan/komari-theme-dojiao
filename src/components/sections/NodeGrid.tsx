@@ -12,8 +12,7 @@ import { CpuIcon, MemoryStickIcon, HardDriveIcon, Info } from "lucide-react";
 import Flag from "./Flag";
 import { Tag } from "../ui/tag";
 import { useNodeCommons } from "@/hooks/useNodeCommons";
-import { ProgressBar } from "../ui/progress-bar";
-import { CircleProgress } from "../ui/progress-circle";
+import { SegmentedProgress } from "../ui/segmented-progress";
 import { useAppConfig } from "@/config";
 import { useLocale } from "@/config/hooks";
 import { NodeDisplayContainer } from "./NodeDisplay";
@@ -27,8 +26,6 @@ interface NodeGridContainerProps {
 
 export const NodeGridContainer = ({
   nodes,
-  enableSwap,
-  selectTrafficProgressStyle,
 }: NodeGridContainerProps) => {
   useRowHeightAlignment({
     containerSelector: '[data-view-type="grid"]',
@@ -44,8 +41,6 @@ export const NodeGridContainer = ({
         <NodeGrid
           key={node.uuid}
           node={node}
-          enableSwap={enableSwap}
-          selectTrafficProgressStyle={selectTrafficProgressStyle}
           onShowDetails={onShowDetails}
         />
       )}
@@ -55,17 +50,50 @@ export const NodeGridContainer = ({
 
 interface NodeGridProps {
   node: NodeData;
-  enableSwap: boolean;
-  selectTrafficProgressStyle: "circular" | "linear";
   onShowDetails: () => void;
 }
 
-export const NodeGrid = ({
-  node,
-  enableSwap,
-  selectTrafficProgressStyle,
-  onShowDetails,
-}: NodeGridProps) => {
+interface MetricRowProps {
+  label: string;
+  value: number;
+  sub?: string;
+  rightText?: string;
+  rightTextClass?: string;
+  className?: string;
+}
+
+const MetricRow = ({
+  label,
+  value,
+  sub,
+  rightText,
+  rightTextClass,
+  className,
+}: MetricRowProps) => (
+  <div className={className}>
+    <div className="flex items-baseline justify-between gap-1.5 mb-1 min-w-0">
+      <span className="text-xs font-medium truncate">{label}</span>
+      <span className={`text-xs font-mono tabular-nums ${rightTextClass ?? ""}`}>
+        {rightText ?? `${value.toFixed(0)}%`}
+      </span>
+    </div>
+    <SegmentedProgress value={value} />
+    {sub && (
+      <div className="text-[10px] text-secondary-foreground mt-1 truncate">
+        {sub}
+      </div>
+    )}
+  </div>
+);
+
+const loadColor = (load: number, cores: number) => {
+  const ratio = cores > 0 ? load / cores : 0;
+  if (ratio >= 1) return "text-rose-500";
+  if (ratio >= 0.7) return "text-amber-500";
+  return "text-emerald-500";
+};
+
+export const NodeGrid = ({ node, onShowDetails }: NodeGridProps) => {
   const {
     stats,
     isOnline,
@@ -73,14 +101,28 @@ export const NodeGrid = ({
     tagList,
     cpuUsage,
     memUsage,
-    swapUsage,
     diskUsage,
-    load,
     expired_at,
     trafficPercentage,
   } = useNodeCommons(node);
-  const { isShowHWBarInCard, isShowValueUnderProgressBar, gridExpiredAtDisplay, gridUptimeDisplay } = useAppConfig();
+  const { isShowHWBarInCard, gridExpiredAtDisplay, gridUptimeDisplay } =
+    useAppConfig();
   const { t } = useLocale();
+
+  const trafficLimitText = formatTrafficLimit(
+    node.traffic_limit,
+    node.traffic_limit_type
+  );
+
+  const cores = node.cpu_cores || 1;
+  const load1 = isOnline && stats ? stats.load : undefined;
+  const loadRatioPct =
+    load1 !== undefined ? Math.min((load1 / cores) * 100, 100) : 0;
+  const loadValueClass =
+    load1 !== undefined ? loadColor(load1, cores) : "text-secondary-foreground";
+
+  const expiredLabel = t("node.expiredAt").replace(/[:：]$/, "");
+  const uptimeLabel = t("node.uptime").replace(/[:：]$/, "");
 
   return (
     <Card
@@ -102,7 +144,9 @@ export const NodeGrid = ({
               className="w-6 h-6 object-contain flex-shrink-0"
               loading="lazy"
             />
-            <CardTitle className="text-base font-bold truncate md:whitespace-normal md:break-words">{node.name}</CardTitle>
+            <CardTitle className="text-base font-bold truncate md:whitespace-normal md:break-words">
+              {node.name}
+            </CardTitle>
           </div>
         </Link>
         <button onClick={onShowDetails} className="flex-shrink-0">
@@ -115,245 +159,202 @@ export const NodeGrid = ({
         </div>
         <div className="border-t border-(--accent-4)/50 my-2"></div>
         {isShowHWBarInCard && (
-          <div className="flex items-center justify-around whitespace-nowrap">
-            <div className="flex items-center gap-1">
-              <CpuIcon className="size-4 text-blue-600 flex-shrink-0" />
-              <span>
-                {node.cpu_cores} {t("node.cores")}
+          <div className="flex items-center gap-2 text-xs px-2 py-1.5 rounded-md bg-(--accent-a2)">
+            <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-center">
+              <CpuIcon className="size-3.5 text-(--accent-10) flex-shrink-0" />
+              <span className="font-mono tabular-nums truncate">
+                {node.cpu_cores}
+                <span className="text-secondary-foreground ml-0.5">C</span>
               </span>
             </div>
-            <div className="flex items-center gap-1">
-              <MemoryStickIcon className="size-4 text-green-600 flex-shrink-0" />
-              <span>{formatBytes(node.mem_total)}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <HardDriveIcon className="size-4 text-red-600 flex-shrink-0" />
-              <span>{formatBytes(node.disk_total)}</span>
-            </div>
-          </div>
-        )}
-        <div className={`${isShowValueUnderProgressBar ? "mb-1" : ""}`}>
-          <div className="flex items-center justify-between">
-            <span>{t("node.cpu")}</span>
-            <div className="w-3/4 flex items-center gap-2">
-              <ProgressBar value={cpuUsage} />
-              <span className="w-12 text-right">{cpuUsage.toFixed(0)}%</span>
-            </div>
-          </div>
-          {isShowValueUnderProgressBar && (
-            <div className="flex text-xs items-center justify-between text-secondary-foreground">
-              <span>
-                {node.cpu_cores} {t("node.cores")}
+            <div className="w-px h-3 bg-(--accent-a4)" />
+            <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-center">
+              <MemoryStickIcon className="size-3.5 text-(--accent-10) flex-shrink-0" />
+              <span className="font-mono tabular-nums truncate">
+                {formatBytes(node.mem_total)}
               </span>
             </div>
-          )}
-        </div>
-        <div className={`${isShowValueUnderProgressBar ? "mb-1" : ""}`}>
-          <div className="flex items-center justify-between">
-            <span>{t("node.mem")}</span>
-            <div className="w-3/4 flex items-center gap-2">
-              <ProgressBar value={memUsage} />
-              <span className="w-12 text-right">{memUsage.toFixed(0)}%</span>
-            </div>
-          </div>
-          {isShowValueUnderProgressBar && (
-            <div className="flex text-xs items-center justify-between text-secondary-foreground">
-              <span>
-                {node.mem_total > 0
-                  ? `${formatBytes(node.mem_total)}`
-                  : t("node.notAvailable")}
-              </span>
-              <span>
-                {stats ? `${formatBytes(stats.ram)}` : t("node.notAvailable")}
-              </span>
-            </div>
-          )}
-        </div>
-        {enableSwap && (
-          <div className={`${isShowValueUnderProgressBar ? "mb-1" : ""}`}>
-            <div className="flex items-center justify-between">
-              <span>{t("node.swap")}</span>
-              <div className="w-3/4 flex items-center gap-2">
-                <ProgressBar value={swapUsage} />
-                {node.swap_total > 0 ? (
-                  <span className="w-12 text-right">
-                    {swapUsage.toFixed(0)}%
-                  </span>
-                ) : (
-                  <span className="w-12 text-right">{t("node.off")}</span>
-                )}
-              </div>
-            </div>
-            {isShowValueUnderProgressBar && (
-              <div className="flex text-xs items-center justify-between text-secondary-foreground">
-                <span>
-                  {node.swap_total > 0
-                    ? `${formatBytes(node.swap_total)}`
-                    : t("node.notEnabled")}
-                </span>
-                <span>
-                  {stats
-                    ? `${formatBytes(stats.swap)}`
-                    : t("node.notAvailable")}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-        <div className={`${isShowValueUnderProgressBar ? "mb-1" : ""}`}>
-          <div className="flex items-center justify-between">
-            <span>{t("node.disk")}</span>
-            <div className="w-3/4 flex items-center gap-2">
-              <ProgressBar value={diskUsage} />
-              <span className="w-12 text-right">{diskUsage.toFixed(0)}%</span>
-            </div>
-          </div>
-          {isShowValueUnderProgressBar && (
-            <div className="flex text-xs items-center justify-between text-secondary-foreground">
-              <span>
-                {node.disk_total > 0
-                  ? `${formatBytes(node.disk_total)}`
-                  : t("node.notAvailable")}
-              </span>
-              <span>
-                {stats ? `${formatBytes(stats.disk)}` : t("node.notAvailable")}
-              </span>
-            </div>
-          )}
-        </div>
-        {selectTrafficProgressStyle === "linear" && (
-          <div className="mb-1">
-            <div className="flex items-center justify-between">
-              <span>{t("node.traffic")}</span>
-              <div className="w-3/4 flex items-center gap-2">
-                <ProgressBar value={trafficPercentage} />
-                <span className="w-12 text-right">
-                  {node.traffic_limit !== 0
-                    ? `${trafficPercentage.toFixed(0)}%`
-                    : t("node.off")}
-                </span>
-              </div>
-            </div>
-            <div className="flex text-xs items-center justify-between text-secondary-foreground">
-              <span>
-                {formatTrafficLimit(
-                  node.traffic_limit,
-                  node.traffic_limit_type
-                )}
-              </span>
-              <span>
-                {stats
-                  ? `${t("node.uploadPrefix")} ${formatBytes(
-                      stats.net_total_up
-                    )} ${t("node.downloadPrefix")} ${formatBytes(
-                      stats.net_total_down
-                    )}`
-                  : t("node.notAvailable")}
+            <div className="w-px h-3 bg-(--accent-a4)" />
+            <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-center">
+              <HardDriveIcon className="size-3.5 text-(--accent-10) flex-shrink-0" />
+              <span className="font-mono tabular-nums truncate">
+                {formatBytes(node.disk_total)}
               </span>
             </div>
           </div>
         )}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
+          <MetricRow
+            label={t("node.cpu")}
+            value={cpuUsage}
+            sub={`${node.cpu_cores} ${t("node.cores")}`}
+          />
+          <MetricRow
+            label={t("node.mem")}
+            value={memUsage}
+            sub={
+              node.mem_total > 0 && stats
+                ? `${formatBytes(stats.ram)} / ${formatBytes(node.mem_total)}`
+                : t("node.notAvailable")
+            }
+          />
+          <MetricRow
+            label={t("node.load")}
+            value={loadRatioPct}
+            rightText={load1 !== undefined ? load1.toFixed(2) : t("node.off")}
+            sub={`${node.cpu_cores} ${t("node.cores")}`}
+            rightTextClass={loadValueClass}
+          />
+          <MetricRow
+            label={t("node.disk")}
+            value={diskUsage}
+            sub={
+              node.disk_total > 0 && stats
+                ? `${formatBytes(stats.disk)} / ${formatBytes(node.disk_total)}`
+                : t("node.notAvailable")
+            }
+          />
+        </div>
         <div className="border-t border-(--accent-4)/50 my-2"></div>
-        <div data-section="traffic">
-          <div className="flex justify-between text-xs">
-            <span>{t("node.network")}</span>
-            <div>
-              <span>
-                {t("node.uploadPrefix")}{" "}
-                {stats
-                  ? formatBytes(stats.net_out, true)
-                  : t("node.notAvailable")}
+        <div
+          data-section="traffic"
+          className="grid grid-cols-2 gap-x-3">
+          <div className="space-y-1.5 pr-3 border-r border-(--accent-4)/50">
+            <div className="text-xs font-medium">{t("network_speed")}</div>
+            <div className="flex items-baseline justify-between gap-1">
+              <span className="text-xs font-medium text-blue-500">
+                {t("node.uploadPrefix")} {t("chart.upload")}
               </span>
-              <span className="ml-2">
-                {t("node.downloadPrefix")}{" "}
-                {stats ? formatBytes(stats.net_in, true) : t("node.notAvailable")}
+              <span className="font-mono tabular-nums text-blue-500">
+                {(() => {
+                  const [num, unit] = (stats ? formatBytes(stats.net_out, true) : "- B/s").split(" ");
+                  return (
+                    <>
+                      <span className="text-sm font-bold">{num}</span>
+                      <span className="text-[10px] ml-0.5">{unit}</span>
+                    </>
+                  );
+                })()}
+              </span>
+            </div>
+            <div className="flex items-baseline justify-between gap-1">
+              <span className="text-xs font-medium text-emerald-500">
+                {t("node.downloadPrefix")} {t("chart.download")}
+              </span>
+              <span className="font-mono tabular-nums text-emerald-500">
+                {(() => {
+                  const [num, unit] = (stats ? formatBytes(stats.net_in, true) : "- B/s").split(" ");
+                  return (
+                    <>
+                      <span className="text-sm font-bold">{num}</span>
+                      <span className="text-[10px] ml-0.5">{unit}</span>
+                    </>
+                  );
+                })()}
               </span>
             </div>
           </div>
-          {selectTrafficProgressStyle === "circular" && (
-            <div className="flex items-center justify-between text-xs mt-2">
-              <span className="w-1/5">{t("node.traffic")}</span>
-              <div className="flex items-center justify-between w-4/5">
-                <div className="flex items-center justify-center w-1/4 h-8">
-                  {node.traffic_limit !== 0 && (
-                    <CircleProgress
+          <div className="flex flex-col items-center text-center h-full">
+            <div className="flex items-baseline justify-between gap-1 w-full">
+              <span className="text-xs font-medium">{t("node.traffic")}</span>
+              <span className="text-[10px] font-mono tabular-nums text-secondary-foreground truncate">
+                {node.traffic_limit !== 0 ? trafficLimitText : "∞"}
+              </span>
+            </div>
+            <div className="flex-1 w-full flex flex-col items-center justify-center space-y-1.5">
+              {node.traffic_limit !== 0 &&
+                (() => {
+                  const up = stats?.net_total_up ?? 0;
+                  const down = stats?.net_total_down ?? 0;
+                  return (
+                    <SegmentedProgress
                       value={trafficPercentage}
-                      maxValue={100}
-                      size={32}
-                      strokeWidth={4}
-                      showPercentage={true}
+                      stacked={{ up, down }}
                     />
-                  )}
-                </div>
-                <div className="w-3/4 text-right">
-                  <div>
-                    <span>
-                      {t("node.uploadPrefix")}{" "}
-                      {stats
-                        ? formatBytes(stats.net_total_up)
-                        : t("node.notAvailable")}
-                    </span>
-                    <span className="ml-2">
-                      {t("node.downloadPrefix")}{" "}
-                      {stats
-                        ? formatBytes(stats.net_total_down)
-                        : t("node.notAvailable")}
-                    </span>
-                  </div>
-                  {node.traffic_limit !== 0 && isOnline && stats && (
-                    <div className="text-right">
-                      {formatTrafficLimit(
-                        node.traffic_limit,
-                        node.traffic_limit_type
-                      )}
-                    </div>
-                  )}
-                </div>
+                  );
+                })()}
+              <div className="flex items-baseline justify-center gap-2 min-w-0 w-full">
+                <span className="font-mono tabular-nums text-blue-500 truncate">
+                  <span className="text-xs font-medium mr-0.5">
+                    {t("node.uploadPrefix")}
+                  </span>
+                  {(() => {
+                    const [num, unit] = (stats
+                      ? formatBytes(stats.net_total_up)
+                      : "- B"
+                    ).split(" ");
+                    return (
+                      <>
+                        <span className="text-xs font-bold">{num}</span>
+                        <span className="text-[9px] ml-0.5">{unit}</span>
+                      </>
+                    );
+                  })()}
+                </span>
+                <span className="font-mono tabular-nums text-emerald-500 truncate">
+                  <span className="text-xs font-medium mr-0.5">
+                    {t("node.downloadPrefix")}
+                  </span>
+                  {(() => {
+                    const [num, unit] = (stats
+                      ? formatBytes(stats.net_total_down)
+                      : "- B"
+                    ).split(" ");
+                    return (
+                      <>
+                        <span className="text-xs font-bold">{num}</span>
+                        <span className="text-[9px] ml-0.5">{unit}</span>
+                      </>
+                    );
+                  })()}
+                </span>
               </div>
             </div>
-          )}
-        </div>
-        <div className="flex justify-between text-xs">
-          <span>{t("node.load")}</span>
-          <span>{load}</span>
+          </div>
         </div>
         {(() => {
-          const showExpiry = gridExpiredAtDisplay === "show" ||
-            (gridExpiredAtDisplay === "hideUnset" && expired_at !== t("node.notSet"));
-          const showUptime = gridUptimeDisplay === "show" ||
-            (gridUptimeDisplay === "hideUnset" && (isOnline ? stats : stats?.time));
+          const showExpiry =
+            gridExpiredAtDisplay === "show" ||
+            (gridExpiredAtDisplay === "hideUnset" &&
+              expired_at !== t("node.notSet"));
+          const showUptime =
+            gridUptimeDisplay === "show" ||
+            (gridUptimeDisplay === "hideUnset" &&
+              (isOnline ? stats : stats?.time));
           if (!showExpiry && !showUptime) return null;
           return (
-            <div className="flex justify-between text-xs">
-              {showExpiry && (
-                <div className="flex justify-start w-full">
-                  <span className="mr-1">{t("node.expiredAt")}</span>
-                  <span>{expired_at}</span>
-                </div>
-              )}
-              {showExpiry && showUptime && (
-                <div className="border-l border-(--accent-4)/50 mx-2"></div>
-              )}
-              {showUptime && (
-                <div className={`flex w-full ${showExpiry ? "justify-end" : "justify-start"}`}>
-                  <span>
-                    {isOnline && stats ? (
-                      <>
-                        <span className="mr-1">{t("node.uptime")}</span>
-                        <span>{formatUptime(stats.uptime)}</span>
-                      </>
-                    ) : stats?.time ? (
-                      <>
-                        <span className="mr-1">{t("node.lastSeen")}</span>
-                        <span>{formatLastSeen(stats.time)}</span>
-                      </>
-                    ) : (
-                      t("node.offline")
-                    )}
-                  </span>
-                </div>
-              )}
-            </div>
+            <>
+              <div className="border-t border-(--accent-4)/50 my-2"></div>
+              <div className="flex items-center justify-between gap-2 text-[11px]">
+                {showExpiry && (
+                  <div className="inline-flex items-center gap-1.5 min-w-0">
+                    <span className="text-secondary-foreground flex-shrink-0">
+                      {expiredLabel}
+                    </span>
+                    <span className="font-mono tabular-nums truncate">
+                      {expired_at}
+                    </span>
+                  </div>
+                )}
+                {showUptime && (
+                  <div
+                    className={`inline-flex items-center gap-1.5 min-w-0 ${
+                      showExpiry ? "ml-auto" : ""
+                    }`}>
+                    <span className="text-secondary-foreground flex-shrink-0">
+                      {uptimeLabel}
+                    </span>
+                    <span className="font-mono tabular-nums truncate">
+                      {isOnline && stats
+                        ? formatUptime(stats.uptime)
+                        : stats?.time
+                        ? formatLastSeen(stats.time)
+                        : t("node.offline")}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </>
           );
         })()}
       </CardContent>
