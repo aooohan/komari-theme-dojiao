@@ -20,8 +20,6 @@ import { useRowHeightAlignment } from "@/hooks/useRowHeightAlignment";
 
 interface NodeGridContainerProps {
   nodes: NodeData[];
-  enableSwap: boolean;
-  selectTrafficProgressStyle: "circular" | "linear";
 }
 
 export const NodeGridContainer = ({
@@ -58,7 +56,6 @@ interface MetricRowProps {
   value: number;
   sub?: string;
   rightText?: string;
-  rightTextClass?: string;
   className?: string;
 }
 
@@ -67,13 +64,12 @@ const MetricRow = ({
   value,
   sub,
   rightText,
-  rightTextClass,
   className,
 }: MetricRowProps) => (
   <div className={className}>
     <div className="flex items-baseline justify-between gap-1.5 mb-1 min-w-0">
       <span className="text-xs font-medium truncate">{label}</span>
-      <span className={`text-xs font-mono tabular-nums ${rightTextClass ?? ""}`}>
+      <span className="text-xs font-mono tabular-nums">
         {rightText ?? `${value.toFixed(0)}%`}
       </span>
     </div>
@@ -85,13 +81,6 @@ const MetricRow = ({
     )}
   </div>
 );
-
-const loadColor = (load: number, cores: number) => {
-  const ratio = cores > 0 ? load / cores : 0;
-  if (ratio >= 1) return "text-rose-500";
-  if (ratio >= 0.7) return "text-amber-500";
-  return "text-emerald-500";
-};
 
 export const NodeGrid = ({ node, onShowDetails }: NodeGridProps) => {
   const {
@@ -118,8 +107,6 @@ export const NodeGrid = ({ node, onShowDetails }: NodeGridProps) => {
   const load1 = isOnline && stats ? stats.load : undefined;
   const loadRatioPct =
     load1 !== undefined ? Math.min((load1 / cores) * 100, 100) : 0;
-  const loadValueClass =
-    load1 !== undefined ? loadColor(load1, cores) : "text-secondary-foreground";
 
   const expiredLabel = t("node.expiredAt").replace(/[:：]$/, "");
   const uptimeLabel = t("node.uptime").replace(/[:：]$/, "");
@@ -203,7 +190,6 @@ export const NodeGrid = ({ node, onShowDetails }: NodeGridProps) => {
             value={loadRatioPct}
             rightText={load1 !== undefined ? load1.toFixed(2) : t("node.off")}
             sub={`${node.cpu_cores} ${t("node.cores")}`}
-            rightTextClass={loadValueClass}
           />
           <MetricRow
             label={t("node.disk")}

@@ -363,11 +363,15 @@ export class WebSocketService {
     }
 
     const endpoint = this.useRpc ? "/api/rpc2" : "/api/clients";
-    const wsUrl =
-      this.url ||
-      `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${
-        window.location.host
-      }${endpoint}`;
+    const devTarget = import.meta.env.DEV
+      ? (import.meta.env.VITE_API_TARGET as string | undefined)
+      : undefined;
+    const wsBase = devTarget
+      ? devTarget.replace(/^http/, "ws").replace(/\/$/, "")
+      : `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${
+          window.location.host
+        }`;
+    const wsUrl = this.url || `${wsBase}${endpoint}`;
 
     try {
       this.ws = new WebSocket(wsUrl);

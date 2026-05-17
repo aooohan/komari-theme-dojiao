@@ -71,7 +71,7 @@ export const NodeDetailModal = ({ node, onClose }: NodeDetailModalProps) => {
 interface NodeDisplayContainerProps {
   nodes: NodeData[];
   children: (node: NodeData, onShowDetails: () => void) => React.ReactNode;
-  viewType?: "grid" | "compact";
+  viewType?: "grid";
 }
 
 export const NodeDisplayContainer = ({

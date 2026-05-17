@@ -156,19 +156,19 @@ const Footer = forwardRef<
                 {" | "}
                 {t("footer.themeBy")}{" "}
                 <a
-                  href="https://github.com/YoungYannick/komari-theme-purcarte-plus"
+                  href="https://github.com/aooohan/komari-theme-dojiao"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-500 hover:text-blue-600 transition-colors">
-                  PurCarte-Plus
+                  Dojiao
                 </a>
               </p>
             )}
 
             {/* 服务器运行时间 */}
             {enableServerUptime && uptimeText && (
-              <div className="flex items-center justify-center text-sm text-secondary-foreground theme-text-shadow">
-                <Clock className="mr-2" size={14} />
+              <div className="flex items-center justify-center gap-1.5 text-xs text-secondary-foreground theme-text-shadow [font-variant-numeric:tabular-nums]">
+                <Clock size={12} className="flex-shrink-0" />
                 <span>{uptimeText}</span>
               </div>
             )}
@@ -177,7 +177,7 @@ const Footer = forwardRef<
             {customLines.map((line, index) => (
               <div
                 key={index}
-                className="flex items-center justify-center text-sm text-secondary-foreground theme-text-shadow"
+                className="flex items-center justify-center text-xs text-secondary-foreground theme-text-shadow [font-variant-numeric:tabular-nums]"
                 dangerouslySetInnerHTML={{ __html: parseMarkdown(line) }}
               />
             ))}

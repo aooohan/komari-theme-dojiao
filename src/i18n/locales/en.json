@@ -553,7 +553,6 @@
   "header": {
     "_": "Header",
     "admin": "Admin",
-    "compact": "Compact View",
     "darkMode": "Dark Mode",
     "grid": "Grid View",
     "lightMode": "Light Mode",

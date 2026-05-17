@@ -5,7 +5,6 @@ import {
   SlidersHorizontal,
   Grid3X3,
   Table2,
-  Rows3,
   Moon,
   Sun,
   SunMoon,
@@ -51,7 +50,6 @@ interface HeaderProps extends Partial<StatsBarProps> {
 
 const ViewModeIcons = {
   grid: Grid3X3,
-  compact: Rows3,
   table: Table2,
 };
 
@@ -64,7 +62,7 @@ const ThemeIcons = {
 const ViewMenuItems = ({
   setViewMode,
 }: {
-  setViewMode: (mode: "grid" | "compact" | "table") => void;
+  setViewMode: (mode: "grid" | "table") => void;
 }) => {
   const { t } = useLocale();
   return (
@@ -72,10 +70,6 @@ const ViewMenuItems = ({
       <DropdownMenuItem onClick={() => setViewMode("grid")}>
         <Grid3X3 className="size-4 mr-2 text-primary" />
         <span>{t("header.grid")}</span>
-      </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => setViewMode("compact")}>
-        <Rows3 className="size-4 mr-2 text-primary" />
-        <span>{t("header.compact")}</span>
       </DropdownMenuItem>
       <DropdownMenuItem onClick={() => setViewMode("table")}>
         <Table2 className="size-4 mr-2 text-primary" />

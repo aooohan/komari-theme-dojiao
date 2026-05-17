@@ -56,15 +56,12 @@ export interface ConfigOptions {
   monitorNodeSortMode: MonitorNodeSortMode; // 监测节点排序方式
   monitorNodeCustomOrder: string; // 监测节点自定义排序（换行分割名称）
   isShowHWBarInCard: boolean; // 是否在卡片中显示硬件信息栏
-  isShowValueUnderProgressBar: boolean; // 是否在流量进度条下方显示数值
   selectTrafficProgressStyle: "circular" | "linear"; // 流量进度条样式
   enableListItemProgressBar: boolean; // 是否启用列表视图进度条
   gridExpiredAtDisplay: DisplayMode; // 网格视图到期时间显示模式
   gridUptimeDisplay: DisplayMode; // 网格视图在线时间显示模式
   tableExpiredAtDisplay: DisplayMode; // 表格视图到期时间显示模式
   tableUptimeDisplay: DisplayMode; // 表格视图在线时间显示模式
-  compactExpiredAtDisplay: DisplayMode; // 紧凑视图到期时间显示模式
-  compactUptimeDisplay: DisplayMode; // 紧凑视图在线时间显示模式
   customTexts: string; // 自定义UI文本
   // 增强功能开关
   enableWelcomeBubble: boolean; // 是否启用欢迎气泡
@@ -148,15 +145,12 @@ export const DEFAULT_CONFIG: ConfigOptions = {
   monitorNodeSortMode: "weight_asc",
   monitorNodeCustomOrder: "",
   isShowHWBarInCard: true,
-  isShowValueUnderProgressBar: true,
   selectTrafficProgressStyle: "circular",
   enableListItemProgressBar: true,
   gridExpiredAtDisplay: "hideUnset",
   gridUptimeDisplay: "hideUnset",
   tableExpiredAtDisplay: "hideUnset",
   tableUptimeDisplay: "hideUnset",
-  compactExpiredAtDisplay: "hideUnset",
-  compactUptimeDisplay: "hideUnset",
   customTexts: "",
   // 增强功能开关
   enableWelcomeBubble: true,
@@ -239,8 +233,8 @@ export const allColors: ColorType[] = [
 export type AppearanceType = "light" | "dark" | "system";
 export const allAppearance: AppearanceType[] = ["light", "dark", "system"];
 
-export type ViewModeType = "grid" | "table" | "compact";
-export const allViewModes: ViewModeType[] = ["grid", "table", "compact"];
+export type ViewModeType = "grid" | "table";
+export const allViewModes: ViewModeType[] = ["grid", "table"];
 
 export type SiteStatus =
   | "public"

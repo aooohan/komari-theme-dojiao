@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { StatsBar } from "@/components/sections/StatsBar";
 import { NodeGridContainer } from "@/components/sections/NodeGrid";
-import { NodeCompactContainer } from "@/components/sections/NodeCompact";
 import { NodeTable } from "@/components/sections/NodeTable";
 import Loading from "@/components/loading";
 import type { NodeData } from "@/types/node";
@@ -72,13 +71,8 @@ const HomePage: React.FC<HomePageProps> = ({
       return (
         <NodeGridContainer
           nodes={filteredNodes}
-          enableSwap={enableSwap}
-          selectTrafficProgressStyle={selectTrafficProgressStyle}
         />
       );
-    }
-    if (viewMode === "compact") {
-      return <NodeCompactContainer nodes={filteredNodes} />;
     }
     if (viewMode === "table") {
       return (

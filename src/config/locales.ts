@@ -32,7 +32,6 @@ export const defaultTexts = {
     _: "标题栏",
     toggleView: "切换视图",
     grid: "网格视图",
-    compact: "紧凑视图",
     table: "表格视图",
     toggleTheme: "切换主题",
     lightMode: "浅色模式",
